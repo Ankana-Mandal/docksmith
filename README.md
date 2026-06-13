@@ -96,9 +96,3 @@ Building Docksmith taught me how containers are simply Linux kernel features com
 * Docksmithfile support
 
 * Image management
-
-
-
-
-
-cat README.md
