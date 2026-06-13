@@ -14,13 +14,13 @@ type Container struct {
 }
 
 func updateJSON(c Container) {
-    os.MkdirAll("containers", 0755)
+    os.MkdirAll("metadata", 0755)
     data, err := json.Marshal(c)
     if err != nil {
         fmt.Fprintf(os.Stderr, "error: %v\n", err)
         os.Exit(1)
     }
-    filename := "containers/" + c.ID + ".json"
+    filename := "metadata/" + c.ID + ".json"
     err = os.WriteFile(filename, data, 0644)
     if err != nil {
         fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -29,13 +29,13 @@ func updateJSON(c Container) {
 }
 
 func ps() {
-    files, err := os.ReadDir("containers")
+    files, err := os.ReadDir("metadata")
     if err != nil {
         fmt.Fprintf(os.Stderr, "error: %v\n", err)
         os.Exit(1)
     }
     for _, file := range files {
-        data, err := os.ReadFile("containers/" + file.Name())
+        data, err := os.ReadFile("metadata/" + file.Name())
         if err != nil {
             fmt.Fprintf(os.Stderr, "error: %v\n", err)
             os.Exit(1)
@@ -47,7 +47,7 @@ func ps() {
 }
 
 func killcontainer(id string) {
-    data, err := os.ReadFile("containers/" + id + ".json")
+    data, err := os.ReadFile("metadata/" + id + ".json")
     if err != nil {
         fmt.Fprintf(os.Stderr, "error: %v\n", err)
         os.Exit(1)
@@ -57,4 +57,5 @@ func killcontainer(id string) {
     syscall.Kill(c.PID, syscall.SIGKILL)
     c.Status = "exited"
     updateJSON(c)
+    cleanupCgroup(c.ID)
 }
