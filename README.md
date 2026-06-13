@@ -11,6 +11,7 @@ The child process enters a new PID and UTS namespace, mounts OverlayFS for an is
 
 applies cgroup limits, performs `chroot()`
 
+chroot is used for filesystem isolation. Unlike pivot_root, chroot is escapable by a root process — a known limitation and the next improvement planned for Docksmith.
 
 
 
