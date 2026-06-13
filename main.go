@@ -3,16 +3,9 @@ import (
     "fmt"
     "os"
     "os/exec"
-    "strconv"
     "syscall"
-    "encoding/json"
     "time"
 )
-type Container struct {
-    ID     string
-    PID    int
-    Status string
-}
 
 func main() {
     switch os.Args[1] {
@@ -42,8 +35,7 @@ func current() {
     rootfs := base + "/rootfs"
     upper  := base + "/container1/upper"
     work   := base + "/container1/work"
-    err := syscall.Mount("overlay",merged,"overlay",0,"lowerdir=" + rootfs + ",upperdir=" + upper + ",workdir=" + work
-     )
+    err := syscall.Mount("overlay",merged,"overlay",0,"lowerdir=" + rootfs + ",upperdir=" + upper + ",workdir=" + work,)
     if err != nil {
         fmt.Fprintf(os.Stderr, "error: %v\n", err)
         os.Exit(1)
@@ -64,75 +56,6 @@ func current() {
     updateJSON(c)
     syscall.Unmount(merged, 0)
 }
-
-func setupCgroup(pid int) {
-    os.MkdirAll("/sys/fs/cgroup/docksmith", 0755)
-    os.WriteFile("/sys/fs/cgroup/docksmith/memory.max", []byte("536870912"), 0644)
-    os.WriteFile("/sys/fs/cgroup/docksmith/cgroup.procs", []byte(strconv.Itoa(pid)), 0644)
-}
-
-func updateJSON(c Container){
-    os.MkdirAll("docksmith/containers", 0755)
-    data, err := json.Marshal(c)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    // Convert the Go struct c into JSON format.
-    filename := "docksmith/containers/" + c.ID + ".json"
-    err = os.WriteFile(filename, data, 0644)
-    if err != nil {
-	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    
-}
-func ps(){
-    files, err := os.ReadDir("docksmith/containers")
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    for _, file := range files {
-        data, _ := os.ReadFile("docksmith/containers/" + file.Name())
-        if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-        }
-    
-    var c Container
-    err = json.Unmarshal(data, &c)
-    if err != nil {
-    	fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    fmt.Printf("ID: %s\n", c.ID)
-    fmt.Printf("PID: %d\n", c.PID)
-    fmt.Printf("Status: %s\n", c.Status)
-    }
-}
-func killcontainer(id string){
-    data, err := os.ReadFile("docksmith/containers/" + id + ".json")
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    var c Container
-    err = json.Unmarshal(data, &c)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-
-    err=syscall.Kill(c.PID,syscall.SIGKILL)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	os.Exit(1)
-    }
-    c.Status = "exited"
-    updateJSON(c)
-}
-
 
 
 func child() {
